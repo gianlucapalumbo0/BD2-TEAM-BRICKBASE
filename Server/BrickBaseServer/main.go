@@ -15,6 +15,10 @@ func main() {
 	})
 
 	router.GET("/sets", controller.GetSets())
+	router.GET("/set/:set_num", controller.GetSet())
+	router.POST("/addset", controller.AddSet())
+	router.PUT("/set/:set_num", controller.UpdateSet())
+	router.DELETE("/set/:set_num", controller.DeleteSet())
 
 	if err := router.Run(":8080"); err != nil {
 		fmt.Println("Failed to start server:", err)
