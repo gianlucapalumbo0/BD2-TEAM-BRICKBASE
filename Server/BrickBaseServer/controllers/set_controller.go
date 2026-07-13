@@ -30,6 +30,7 @@ func GetSets() gin.HandlerFunc {
 
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch sets."})
+			return
 		}
 		defer cursor.Close(ctx)
 
@@ -131,10 +132,11 @@ func UpdateSet() gin.HandlerFunc {
 
 		update := bson.M{
 			"$set": bson.M{
-				"name":      set.Name,
-				"year":      set.Year,
-				"theme_id":  set.ThemeID,
-				"num_parts": set.NumParts,
+				"name":            set.Name,
+				"year":            set.Year,
+				"theme_id":        set.ThemeID,
+				"num_parts":       set.NumParts,
+				"parts_inventory": set.PartsInventory,
 			},
 		}
 

@@ -1,12 +1,10 @@
 package models
 
-type PartCategory struct {
-	ID   int    `bson:"_id" json:"id"`
-	Name string `bson:"name" json:"name"`
-}
+import "go.mongodb.org/mongo-driver/v2/bson"
 
+// Part rappresenta il documento nella collezione "parts"
 type Part struct {
-	PartNum   string `bson:"_id" json:"part_num"`
-	Name      string `bson:"name" json:"name"`
-	PartCatID int    `bson:"part_cat_id" json:"part_cat_id"`
+	ID      bson.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	PartNum string        `bson:"part_num" json:"part_num"`
+	Name    string        `bson:"name" json:"name"`
 }
