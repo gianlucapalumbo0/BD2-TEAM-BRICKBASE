@@ -10,4 +10,5 @@ func SetupUnProtectedRoutes(router *gin.Engine) {
 	router.GET("/set/:set_num", controller.GetSet())
 	router.POST("/register", controller.RegisterUser())
 	router.POST("/login", controller.LoginUser())
+	router.GET("/bestsets", controller.GetBestSets())
 }

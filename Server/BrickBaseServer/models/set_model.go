@@ -10,6 +10,12 @@ type InventoryPart struct {
 	IsSpare  bool   `bson:"is_spare" json:"is_spare"`
 }
 
+type UserReview struct {
+	UserID string  `bson:"user_id" json:"user_id"`
+	Review string  `bson:"review" json:"review"`
+	Rating float64 `bson:"rating" json:"rating"`
+}
+
 // Set rappresenta il documento principale nella collezione "sets"
 type Set struct {
 	ID             bson.ObjectID   `bson:"_id,omitempty" json:"_id,omitempty"`
@@ -19,6 +25,6 @@ type Set struct {
 	ThemeID        int             `bson:"theme_id" json:"theme_id"`
 	NumParts       int             `bson:"num_parts" json:"num_parts"`
 	PartsInventory []InventoryPart `bson:"parts_inventory" json:"parts_inventory"`
-	UserReview     string          `bson:"user_review" json:"user_review"`
-	Ranking        int             `bson:"ranking" json:"ranking"`
+	UserReviews    []UserReview    `bson:"user_reviews" json:"user_reviews"`
+	ReviewRating   float64         `bson:"review_rating" json:"review_rating"`
 }
