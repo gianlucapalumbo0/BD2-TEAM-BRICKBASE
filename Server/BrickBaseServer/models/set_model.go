@@ -19,4 +19,6 @@ type Set struct {
 	ThemeID        int             `bson:"theme_id" json:"theme_id"`
 	NumParts       int             `bson:"num_parts" json:"num_parts"`
 	PartsInventory []InventoryPart `bson:"parts_inventory" json:"parts_inventory"`
+	UserReview     string          `bson:"user_review" json:"user_review"`
+	Ranking        int             `bson:"ranking" json:"ranking"`
 }
