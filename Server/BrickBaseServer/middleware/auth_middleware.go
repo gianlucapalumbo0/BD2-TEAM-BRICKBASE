@@ -9,6 +9,7 @@ import (
 
 func AuthMiddleWare() gin.HandlerFunc {
 	return func(c *gin.Context) {
+
 		token, err := utils.GetAccessToken(c)
 
 		if err != nil {

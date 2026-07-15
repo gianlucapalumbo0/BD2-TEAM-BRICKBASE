@@ -12,5 +12,6 @@ func SetupProtectedRoutes(router *gin.Engine) {
 	router.POST("/addset", controller.AddSet())
 	router.PUT("/set/:set_num", controller.UpdateSet())
 	router.DELETE("/set/:set_num", controller.DeleteSet())
+	router.PATCH("/sets/:set_num/review", controller.AddUserReview())
 
 }
