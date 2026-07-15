@@ -1,0 +1,160 @@
+{{ define "navbar" }}
+
+<nav class="relative bg-slate-950 border-b border-slate-800 sticky top-0 z-50 shadow-lg">
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+
+       
+        <a href="/" class="flex items-center gap-2 hover:-translate-y-0.5 transition-transform">
+
+            <span class="text-2xl">🧱</span>
+
+            <span class="text-xl font-extrabold text-white">
+                Brick<span class="text-amber-500">Base</span>
+            </span>
+
+        </a>
+
+
+     
+        <ul class="hidden md:flex items-center gap-2 text-sm font-semibold">
+
+            <li>
+                <a href="/" class="text-slate-400 hover:text-white px-3 py-2 rounded-lg hover:bg-slate-800 transition">
+                    Home
+                </a>
+            </li>
+
+            <li>
+                <a href="/sets"
+                    class="text-slate-400 hover:text-white px-3 py-2 rounded-lg hover:bg-slate-800 transition">
+                    Set
+                </a>
+            </li>
+
+            <li>
+                <a href="#contact-section"
+                    class="text-slate-400 hover:text-white px-3 py-2 rounded-lg hover:bg-slate-800 transition">
+                    Pezzi
+                </a>
+            </li>
+
+            <li>
+                <a href="#contact-section"
+                    class="text-slate-400 hover:text-white px-3 py-2 rounded-lg hover:bg-slate-800 transition">
+                    Contatti
+                </a>
+            </li>
+
+        </ul>
+
+
+
+       
+        <div class="hidden md:flex items-center gap-3 text-sm font-semibold">
+
+
+            
+
+            <a id="nav-login-btn" href="#auth-section"
+                class="bg-amber-500 hover:bg-amber-600 text-slate-950 px-4 py-2 rounded-lg shadow-md transition">
+                Accedi
+            </a>
+
+
+            <a id="nav-register-btn" href="#auth-section"
+                class="bg-amber-500 hover:bg-amber-600 text-slate-950 px-4 py-2 rounded-lg shadow-md transition">
+                Registrati
+            </a>
+
+
+
+           
+
+            <span id="nav-user-badge"
+                class="hidden text-amber-500 font-bold bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
+
+                <span id="nav-user-name"></span>
+
+            </span>
+
+
+            <a id="nav-logout-btn" href="#"
+                class="hidden text-red-500 hover:text-white px-4 py-2 rounded-lg border border-red-500/30 hover:bg-red-500 transition">
+                Logout
+            </a>
+
+
+        </div>
+
+
+
+       
+
+        <button id="mobile-menu-btn" class="md:hidden text-slate-400 hover:text-white">
+
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+                <path id="icon-open" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 6h16M4 12h16M4 18h16" />
+
+
+                <path id="icon-close" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12" />
+
+            </svg>
+
+        </button>
+
+
+    </div>
+
+
+
+    
+
+    <div id="mobile-menu" class="hidden md:hidden bg-slate-900 border-t border-slate-800 shadow-xl">
+
+
+        <div class="px-4 py-5 flex flex-col gap-2">
+
+
+            <a href="/" class="text-slate-300 hover:text-white px-3 py-3 rounded-lg hover:bg-slate-800 transition">
+                Home
+            </a>
+
+
+            <a href="/sets"
+                class="text-slate-300 hover:text-white px-3 py-3 rounded-lg hover:bg-slate-800 transition">
+                Set
+            </a>
+
+            <a href="#dashboard-section" class="text-slate-300 hover:text-white px-3 py-3 rounded-lg hover:bg-slate-800 transition">
+                Pezzi
+            </a>
+
+
+            <a href="#contact-section"
+                class="text-slate-300 hover:text-white px-3 py-3 rounded-lg hover:bg-slate-800 transition">
+                Contatti
+            </a>
+
+
+            <hr class="border-slate-800 my-3">
+
+
+            <a href="#auth-section"
+                class="bg-amber-500 hover:bg-amber-600 text-slate-950 text-center px-4 py-3 rounded-lg font-semibold">
+                Accedi / Registrati
+            </a>
+
+
+        </div>
+
+
+    </div>
+
+
+</nav>
+
+{{ end }}

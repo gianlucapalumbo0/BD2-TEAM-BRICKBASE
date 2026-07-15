@@ -26,12 +26,12 @@ import (
 var validate = validator.New()
 
 // restituisce tutti i set presenti nel database
-func GetSets() gin.HandlerFunc {
+func GetSets(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c, 100*time.Second)
 		defer cancel()
 
-		var setCollection *mongo.Collection = database.OpenCollection("sets", database.Connect())
+		var setCollection *mongo.Collection = database.OpenCollection("sets", client)
 
 		var sets []models.Set
 
@@ -54,7 +54,7 @@ func GetSets() gin.HandlerFunc {
 }
 
 // restituisce un set specifico dato il suo numero
-func GetSet() gin.HandlerFunc {
+func GetSet(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c, 100*time.Second)
 		defer cancel()
@@ -67,7 +67,7 @@ func GetSet() gin.HandlerFunc {
 			return
 		}
 
-		var setCollection *mongo.Collection = database.OpenCollection("sets", database.Connect())
+		var setCollection *mongo.Collection = database.OpenCollection("sets", client)
 
 		var set models.Set
 
@@ -84,7 +84,7 @@ func GetSet() gin.HandlerFunc {
 }
 
 // AddSet inserisce un nuovo set nel database
-func AddSet() gin.HandlerFunc {
+func AddSet(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role, err := utils.GetRoleFromContext(c)
 		if err != nil {
@@ -110,7 +110,7 @@ func AddSet() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Validation failed", "details": err.Error()})
 			return
 		}
-		var setCollection *mongo.Collection = database.OpenCollection("sets", database.Connect())
+		var setCollection *mongo.Collection = database.OpenCollection("sets", client)
 
 		result, err := setCollection.InsertOne(ctx, set)
 
@@ -125,7 +125,7 @@ func AddSet() gin.HandlerFunc {
 }
 
 // UpdateSet aggiorna un set esistente dato il suo numero
-func UpdateSet() gin.HandlerFunc {
+func UpdateSet(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		role, err := utils.GetRoleFromContext(c)
 		if err != nil {
@@ -159,7 +159,7 @@ func UpdateSet() gin.HandlerFunc {
 			return
 		}
 
-		var setCollection *mongo.Collection = database.OpenCollection("sets", database.Connect())
+		var setCollection *mongo.Collection = database.OpenCollection("sets", client)
 
 		update := bson.M{
 			"$set": bson.M{
@@ -188,7 +188,7 @@ func UpdateSet() gin.HandlerFunc {
 }
 
 // DeleteSet elimina un set dato il suo numero
-func DeleteSet() gin.HandlerFunc {
+func DeleteSet(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		role, err := utils.GetRoleFromContext(c)
@@ -212,7 +212,7 @@ func DeleteSet() gin.HandlerFunc {
 			return
 		}
 
-		var setCollection *mongo.Collection = database.OpenCollection("sets", database.Connect())
+		var setCollection *mongo.Collection = database.OpenCollection("sets", client)
 
 		result, err := setCollection.DeleteOne(ctx, bson.M{"set_num": setID})
 
@@ -230,7 +230,7 @@ func DeleteSet() gin.HandlerFunc {
 	}
 }
 
-func AddUserReview() gin.HandlerFunc {
+func AddUserReview(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		userId, err := utils.GetUserIdFromContext(c)
@@ -276,7 +276,7 @@ func AddUserReview() gin.HandlerFunc {
 		ctx, cancel := context.WithTimeout(c, 100*time.Second)
 		defer cancel()
 
-		setCollection := database.OpenCollection("sets", database.Connect())
+		setCollection := database.OpenCollection("sets", client)
 
 		checkFilter := bson.M{
 			"set_num":              setId,
@@ -294,7 +294,7 @@ func AddUserReview() gin.HandlerFunc {
 			return
 		}
 
-		rating, err := GetReviewRating(req.Review, database.Connect(), c)
+		rating, err := GetReviewRating(req.Review, client, c)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -372,12 +372,6 @@ func AddUserReview() gin.HandlerFunc {
 
 func GetReviewRating(review string, client *mongo.Client, c *gin.Context) (float64, error) {
 
-	err := godotenv.Load(".env")
-
-	if err != nil {
-		log.Println("Warning: .env file not found")
-	}
-
 	geminiApiKey := os.Getenv("GEMINI_API_KEY")
 
 	if geminiApiKey == "" {
@@ -425,7 +419,7 @@ func GetReviewRating(review string, client *mongo.Client, c *gin.Context) (float
 	return rating, nil
 }
 
-func GetBestSets() gin.HandlerFunc {
+func GetBestSets(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		err := godotenv.Load(".env")
@@ -433,7 +427,7 @@ func GetBestSets() gin.HandlerFunc {
 			log.Println("Warning: .env file not found")
 		}
 
-		var limit int64 = 5
+		var limit int64 = 4
 
 		findOptions := options.Find()
 
@@ -451,7 +445,7 @@ func GetBestSets() gin.HandlerFunc {
 		ctx, cancel := context.WithTimeout(c, 100*time.Second)
 		defer cancel()
 
-		setCollection := database.OpenCollection("sets", database.Connect())
+		setCollection := database.OpenCollection("sets", client)
 
 		cursor, err := setCollection.Find(
 			ctx,

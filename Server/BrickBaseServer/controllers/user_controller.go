@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -25,7 +26,7 @@ func HashPassword(password string) (string, error) {
 
 }
 
-func RegisterUser() gin.HandlerFunc {
+func RegisterUser(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var user models.User
 
@@ -50,7 +51,7 @@ func RegisterUser() gin.HandlerFunc {
 		var ctx, cancel = context.WithTimeout(c, 100*time.Second)
 		defer cancel()
 
-		var userCollection *mongo.Collection = database.OpenCollection("users", database.Connect())
+		var userCollection *mongo.Collection = database.OpenCollection("users", client)
 
 		count, err := userCollection.CountDocuments(ctx, bson.D{{Key: "email", Value: user.Email}})
 
@@ -78,7 +79,7 @@ func RegisterUser() gin.HandlerFunc {
 
 }
 
-func LoginUser() gin.HandlerFunc {
+func LoginUser(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var userLogin models.UserLogin
 
@@ -90,7 +91,7 @@ func LoginUser() gin.HandlerFunc {
 		var ctx, cancel = context.WithTimeout(c, 100*time.Second)
 		defer cancel()
 
-		var userCollection *mongo.Collection = database.OpenCollection("users", database.Connect())
+		var userCollection *mongo.Collection = database.OpenCollection("users", client)
 
 		var foundUser models.User
 		err := userCollection.FindOne(ctx, bson.D{{Key: "email", Value: userLogin.Email}}).Decode(&foundUser)
@@ -119,15 +120,122 @@ func LoginUser() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, models.UserResponse{
-			UserId:       foundUser.UserID,
-			FirstName:    foundUser.FirstName,
-			LastName:     foundUser.LastName,
-			Email:        foundUser.Email,
-			Role:         foundUser.Role,
-			Token:        token,
-			RefreshToken: refreshToken,
+		http.SetCookie(c.Writer, &http.Cookie{
+			Name:     "access_token",
+			Value:    token,
+			Path:     "/",
+			MaxAge:   86400,
+			Secure:   false,
+			HttpOnly: true,
+			SameSite: http.SameSiteNoneMode,
+		})
+		http.SetCookie(c.Writer, &http.Cookie{
+			Name:     "refresh_token",
+			Value:    refreshToken,
+			Path:     "/",
+			MaxAge:   604800,
+			Secure:   false,
+			HttpOnly: true,
+			SameSite: http.SameSiteNoneMode,
 		})
 
+		c.JSON(http.StatusOK, models.UserResponse{
+			UserId:    foundUser.UserID,
+			FirstName: foundUser.FirstName,
+			LastName:  foundUser.LastName,
+			Email:     foundUser.Email,
+			Role:      foundUser.Role,
+		})
+
+	}
+}
+
+func LogoutHandler(client *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		var UserLogout struct {
+			UserId string `json:"user_id"`
+		}
+
+		err := c.ShouldBindJSON(&UserLogout)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+			return
+		}
+
+		fmt.Println("User ID from Logout request:", UserLogout.UserId)
+
+		err = utils.UpdateAllTokens(UserLogout.UserId, "", "", client)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error logging out"})
+			return
+		}
+
+		http.SetCookie(c.Writer, &http.Cookie{
+			Name:     "access_token",
+			Value:    "",
+			Path:     "/",
+			MaxAge:   -1,
+			Secure:   false,
+			HttpOnly: true,
+			SameSite: http.SameSiteNoneMode,
+		})
+
+		http.SetCookie(c.Writer, &http.Cookie{
+			Name:     "refresh_token",
+			Value:    "",
+			Path:     "/",
+			MaxAge:   -1,
+			Secure:   false,
+			HttpOnly: true,
+			SameSite: http.SameSiteNoneMode,
+		})
+
+		c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
+	}
+}
+
+func RefreshTokenHandler(client *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(c, 100*time.Second)
+		defer cancel()
+
+		refreshToken, err := c.Cookie("refresh_token")
+
+		if err != nil {
+			fmt.Println("error", err.Error())
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unable to retrieve refresh token from cookie"})
+			return
+		}
+
+		claim, err := utils.ValidateRefreshToken(refreshToken)
+		if err != nil || claim == nil {
+			fmt.Println("error", err.Error())
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired refresh token"})
+			return
+		}
+
+		var userCollection *mongo.Collection = database.OpenCollection("users", client)
+
+		var user models.User
+		err = userCollection.FindOne(ctx, bson.D{{Key: "user_id", Value: claim.UserId}}).Decode(&user)
+
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+			return
+		}
+
+		newToken, newRefreshToken, _ := utils.GenerateAllTokens(user.Email, user.FirstName, user.LastName, user.Role, user.UserID)
+		err = utils.UpdateAllTokens(user.UserID, newToken, newRefreshToken, client)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error updating tokens"})
+			return
+		}
+
+		c.SetCookie("access_token", newToken, 86400, "/", "", false, true)
+		c.SetCookie("refresh_token", newRefreshToken, 604800, "/", "", false, true)
+
+		c.JSON(http.StatusOK, gin.H{"message": "Tokens refreshed"})
 	}
 }
