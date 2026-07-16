@@ -10,6 +10,7 @@ func SetupUnProtectedRoutes(router *gin.Engine, client *mongo.Client) {
 	api := router.Group("/api")
 	{
 		api.GET("/sets", controller.GetSets(client))
+		api.GET("/parts", controller.GetParts(client))
 		api.GET("/set/:set_num", controller.GetSet(client))
 		api.POST("/register", controller.RegisterUser(client))
 		api.POST("/login", controller.LoginUser(client))

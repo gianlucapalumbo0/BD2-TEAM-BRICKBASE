@@ -31,12 +31,16 @@ func GetSets(client *mongo.Client) gin.HandlerFunc {
 		ctx, cancel := context.WithTimeout(c, 100*time.Second)
 		defer cancel()
 
-		var setCollection *mongo.Collection = database.OpenCollection("sets", client)
+		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+		skip := (page - 1) * limit
 
+		var setCollection *mongo.Collection = database.OpenCollection("sets", client)
 		var sets []models.Set
 
-		cursor, err := setCollection.Find(ctx, bson.M{})
+		findOptions := options.Find().SetLimit(int64(limit)).SetSkip(int64(skip))
 
+		cursor, err := setCollection.Find(ctx, bson.M{}, findOptions)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch sets."})
 			return
@@ -49,7 +53,6 @@ func GetSets(client *mongo.Client) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, sets)
-
 	}
 }
 

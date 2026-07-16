@@ -54,6 +54,12 @@ func main() {
 		})
 	})
 
+	router.GET("/parts", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "part.html", gin.H{
+			"title": "Catalogo Pz LEGO",
+		})
+	})
+
 	routes.SetupUnProtectedRoutes(router, client)
 	routes.SetupProtectedRoutes(router, client)
 

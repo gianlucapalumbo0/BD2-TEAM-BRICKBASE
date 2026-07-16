@@ -127,7 +127,7 @@ func LoginUser(client *mongo.Client) gin.HandlerFunc {
 			MaxAge:   86400,
 			Secure:   false,
 			HttpOnly: true,
-			SameSite: http.SameSiteNoneMode,
+			SameSite: http.SameSiteLaxMode,
 		})
 		http.SetCookie(c.Writer, &http.Cookie{
 			Name:     "refresh_token",
@@ -136,7 +136,7 @@ func LoginUser(client *mongo.Client) gin.HandlerFunc {
 			MaxAge:   604800,
 			Secure:   false,
 			HttpOnly: true,
-			SameSite: http.SameSiteNoneMode,
+			SameSite: http.SameSiteLaxMode,
 		})
 
 		c.JSON(http.StatusOK, models.UserResponse{
@@ -179,7 +179,7 @@ func LogoutHandler(client *mongo.Client) gin.HandlerFunc {
 			MaxAge:   -1,
 			Secure:   false,
 			HttpOnly: true,
-			SameSite: http.SameSiteNoneMode,
+			SameSite: http.SameSiteLaxMode,
 		})
 
 		http.SetCookie(c.Writer, &http.Cookie{
@@ -189,7 +189,7 @@ func LogoutHandler(client *mongo.Client) gin.HandlerFunc {
 			MaxAge:   -1,
 			Secure:   false,
 			HttpOnly: true,
-			SameSite: http.SameSiteNoneMode,
+			SameSite: http.SameSiteLaxMode,
 		})
 
 		c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
