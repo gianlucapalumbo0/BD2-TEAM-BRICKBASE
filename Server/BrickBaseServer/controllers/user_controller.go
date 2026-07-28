@@ -196,6 +196,30 @@ func LogoutHandler(client *mongo.Client) gin.HandlerFunc {
 	}
 }
 
+func GetCurrentUser() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tokenString, err := utils.GetAccessToken(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Not authenticated"})
+			return
+		}
+
+		claims, err := utils.ValidateToken(tokenString)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
+			return
+		}
+
+		c.JSON(http.StatusOK, models.UserResponse{
+			UserId:    claims.UserId,
+			FirstName: claims.FirstName,
+			LastName:  claims.LastName,
+			Email:     claims.Email,
+			Role:      claims.Role,
+		})
+	}
+}
+
 func RefreshTokenHandler(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(c, 100*time.Second)

@@ -33,14 +33,7 @@
             </li>
 
             <li>
-                <a href="/parts"
-                    class="text-slate-400 hover:text-white px-3 py-2 rounded-lg hover:bg-slate-800 transition">
-                    Pezzi
-                </a>
-            </li>
-
-            <li>
-                <a href="#contact-section"
+                <a href="/contacts"
                     class="text-slate-400 hover:text-white px-3 py-2 rounded-lg hover:bg-slate-800 transition">
                     Contatti
                 </a>
@@ -56,13 +49,13 @@
 
             
 
-            <a id="nav-login-btn" href="#auth-section"
+            <a id="nav-login-btn" href="/login"
                 class="bg-amber-500 hover:bg-amber-600 text-slate-950 px-4 py-2 rounded-lg shadow-md transition">
                 Accedi
             </a>
 
 
-            <a id="nav-register-btn" href="#auth-section"
+            <a id="nav-register-btn" href="/register"
                 class="bg-amber-500 hover:bg-amber-600 text-slate-950 px-4 py-2 rounded-lg shadow-md transition">
                 Registrati
             </a>
@@ -71,12 +64,15 @@
 
            
 
-            <span id="nav-user-badge"
-                class="hidden text-amber-500 font-bold bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
-
-                <span id="nav-user-name"></span>
-
-            </span>
+            <div id="nav-user-info" class="hidden flex items-center gap-2">
+                <span id="nav-user-badge"
+                    class="text-amber-500 font-bold bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
+                    <span id="nav-user-name"></span>
+                </span>
+                <span id="nav-user-role"
+                    class="text-slate-300 text-xs font-semibold bg-slate-800 px-2 py-1 rounded-full border border-slate-700 uppercase tracking-wide">
+                </span>
+            </div>
 
 
             <a id="nav-logout-btn" href="#"
@@ -129,12 +125,7 @@
                 Set
             </a>
 
-            <a href="/parts" class="text-slate-300 hover:text-white px-3 py-3 rounded-lg hover:bg-slate-800 transition">
-                Pezzi
-            </a>
-
-
-            <a href="#contact-section"
+            <a href="/contacts"
                 class="text-slate-300 hover:text-white px-3 py-3 rounded-lg hover:bg-slate-800 transition">
                 Contatti
             </a>
@@ -143,10 +134,27 @@
             <hr class="border-slate-800 my-3">
 
 
-            <a href="#auth-section"
-                class="bg-amber-500 hover:bg-amber-600 text-slate-950 text-center px-4 py-3 rounded-lg font-semibold">
-                Accedi / Registrati
-            </a>
+            <div id="mobile-auth-guest" class="flex flex-col gap-2">
+                <a id="mobile-login-btn" href="/login"
+                    class="bg-amber-500 hover:bg-amber-600 text-slate-950 text-center px-4 py-3 rounded-lg font-semibold">
+                    Accedi
+                </a>
+                <a id="mobile-register-btn" href="/register"
+                    class="bg-slate-800 hover:bg-slate-700 text-white text-center px-4 py-3 rounded-lg font-semibold border border-slate-700">
+                    Registrati
+                </a>
+            </div>
+
+            <div id="mobile-auth-user" class="hidden flex flex-col gap-2">
+                <div class="text-center px-4 py-3 rounded-lg bg-slate-800 border border-slate-700">
+                    <p id="mobile-user-name" class="text-amber-500 font-bold"></p>
+                    <p id="mobile-user-role" class="text-slate-400 text-sm mt-1 uppercase tracking-wide"></p>
+                </div>
+                <a id="mobile-logout-btn" href="#"
+                    class="text-red-500 hover:text-white text-center px-4 py-3 rounded-lg font-semibold border border-red-500/30 hover:bg-red-500 transition">
+                    Logout
+                </a>
+            </div>
 
 
         </div>
