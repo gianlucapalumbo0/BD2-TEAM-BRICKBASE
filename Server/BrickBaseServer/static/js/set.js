@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 let currentPage = 1;
 let isLoading = false;
-let hasMore = true; // Per smettere di chiamare l'API se finiscono i set
+let hasMore = true; 
 
 async function fetchAllSets() {
     if (isLoading || !hasMore) return;
@@ -21,23 +21,24 @@ async function fetchAllSets() {
         const sets = await response.json();
         const container = document.getElementById('all-sets-container');
         
-        // GESTIONE NULL/VUOTO: Controlla che sets esista prima di leggerne la lunghezza
+        
         if (!sets || sets.length === 0) {
             hasMore = false; 
             
-            // Se è la prima pagina e non ci sono set, mostra un messaggio
             if (currentPage === 1) {
                 container.innerHTML = '<p class="text-slate-400 col-span-full">Nessun set trovato.</p>';
             }
             return;
         }
 
-        // RIMOZIONE TESTO: Se è la prima pagina, svuota il "Caricamento in corso..."
         if (currentPage === 1) {
             container.innerHTML = '';
         }
 
         sets.forEach(set => {
+            // 1. Definiamo la nuova URL
+            const detailUrl = `/set-detail?set_num=${set.set_num}`;
+
             const card = `
                 <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800 overflow-hidden hover:border-amber-500/50 transition-all">
                     <div class="h-40 bg-slate-800 rounded-xl mb-4 flex items-center justify-center overflow-hidden">
@@ -48,7 +49,9 @@ async function fetchAllSets() {
                     </div>
                     <h3 class="font-bold text-white truncate">${set.name}</h3>
                     <p class="text-slate-400 text-sm mb-4">Codice: ${set.set_num}</p>
-                    <a href="/set/${set.set_num}" class="block w-full py-2 text-center bg-slate-800 hover:bg-slate-700 rounded-lg text-sm font-semibold transition-all">Vedi dettagli</a>
+                    
+                    <!-- 2. Aggiorniamo l'href del bottone -->
+                    <a href="${detailUrl}" class="block w-full py-2 text-center bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg text-sm font-bold transition-all">Vedi dettagli</a>
                 </div>
             `;
             container.innerHTML += card;
@@ -57,7 +60,6 @@ async function fetchAllSets() {
         currentPage++; 
     } catch (error) {
         console.error('Errore:', error);
-        // In caso di errore alla prima pagina, diamo un feedback visivo
         if (currentPage === 1) {
             document.getElementById('all-sets-container').innerHTML = 
                 '<p class="text-red-400 col-span-full">Errore durante il caricamento dei set.</p>';

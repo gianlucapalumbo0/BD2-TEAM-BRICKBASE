@@ -477,3 +477,74 @@ func GetBestSets(client *mongo.Client) gin.HandlerFunc {
 		c.JSON(http.StatusOK, bestSets)
 	}
 }
+
+// GetSetInventoryDetailed restituisce tutti i pezzi di un set completi di immagini e colori
+func GetSetInventoryDetailed(client *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c, 100*time.Second)
+		defer cancel()
+
+		setID := c.Param("set_num")
+		if setID == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Set ID is required"})
+			return
+		}
+
+		var setCollection *mongo.Collection = database.OpenCollection("sets", client)
+
+		// Pipeline di Aggregazione MongoDB
+		pipeline := mongo.Pipeline{
+			// 1. Trova il set specifico
+			{{Key: "$match", Value: bson.M{"set_num": setID}}},
+
+			// 2. "Srotola" l'array dell'inventario in documenti separati
+			{{Key: "$unwind", Value: "$parts_inventory"}},
+
+			// 3. Unisci i dati del pezzo (collezione parts)
+			{{Key: "$lookup", Value: bson.M{
+				"from":         "parts",
+				"localField":   "parts_inventory.part_num",
+				"foreignField": "part_num",
+				"as":           "part_info",
+			}}},
+			// Trasforma l'array risultante in un oggetto
+			{{Key: "$unwind", Value: bson.M{"path": "$part_info", "preserveNullAndEmptyArrays": true}}},
+
+			// 4. Unisci i dati del colore (collezione colors)
+			{{Key: "$lookup", Value: bson.M{
+				"from":         "colors",
+				"localField":   "parts_inventory.color_id",
+				"foreignField": "color_id",
+				"as":           "color_info",
+			}}},
+			{{Key: "$unwind", Value: bson.M{"path": "$color_info", "preserveNullAndEmptyArrays": true}}},
+
+			// 5. Proietta (seleziona) solo i campi che ci interessano per il frontend
+			{{Key: "$project", Value: bson.M{
+				"_id":          0,
+				"part_num":     "$parts_inventory.part_num",
+				"quantity":     "$parts_inventory.quantity",
+				"is_spare":     "$parts_inventory.is_spare",
+				"part_name":    "$part_info.name",
+				"part_img_url": "$part_info.part_img_url",
+				"color_name":   "$color_info.name",
+				"color_rgb":    "$color_info.rgb",
+			}}},
+		}
+
+		cursor, err := setCollection.Aggregate(ctx, pipeline)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Errore durante il recupero dei pezzi"})
+			return
+		}
+		defer cursor.Close(ctx)
+
+		var results []bson.M
+		if err = cursor.All(ctx, &results); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Errore decodifica pezzi"})
+			return
+		}
+
+		c.JSON(http.StatusOK, results)
+	}
+}

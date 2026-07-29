@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contatti | BrickBase</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-950 text-slate-200 min-h-screen flex flex-col justify-between">
+
+    
+    {{ template "navbar" . }}
+
+    <main class="container mx-auto py-20 px-6 max-w-6xl flex-grow flex flex-col justify-center">
+
+        
+        <div class="text-center mb-16">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-4">
+                Mettiti in <span class="text-amber-500">contatto</span> con noi
+            </h1>
+            <p class="text-lg text-slate-400 max-w-2xl mx-auto">
+                Hai domande sulla tua collezione, problemi con l'account o proposte di collaborazione?
+                Il team di BrickBase è sempre a tua disposizione.
+            </p>
+        </div>
+
+       
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+           
+            <div
+                class="p-8 bg-slate-900 rounded-2xl border border-slate-800 text-center flex flex-col items-center hover:border-slate-700 transition duration-300">
+                <div class="text-4xl mb-4 bg-slate-950 p-4 rounded-full border border-slate-800">📍</div>
+                <h3 class="font-bold text-xl text-white mb-2">Sede Centrale</h3>
+                <p class="text-sm text-slate-400 leading-relaxed">
+                    Via dei Mattoncini, 42<br>
+                    00100 Roma, Italia
+                </p>
+            </div>
+
+            
+            <div
+                class="p-8 bg-slate-900 rounded-2xl border border-slate-800 text-center flex flex-col items-center hover:border-slate-700 transition duration-300">
+                <div class="text-4xl mb-4 bg-slate-950 p-4 rounded-full border border-slate-800">📧</div>
+                <h3 class="font-bold text-xl text-white mb-2">Email</h3>
+                <p class="text-sm text-slate-400 leading-relaxed">
+                    Supporto: <a href="mailto:supporto@brickbase.it"
+                        class="text-amber-500 hover:underline">supporto@brickbase.it</a><br>
+                    Info: <a href="mailto:info@brickbase.it"
+                        class="text-amber-500 hover:underline">info@brickbase.it</a>
+                </p>
+            </div>
+
+            
+            <div
+                class="p-8 bg-slate-900 rounded-2xl border border-slate-800 text-center flex flex-col items-center hover:border-slate-700 transition duration-300">
+                <div class="text-4xl mb-4 bg-slate-950 p-4 rounded-full border border-slate-800">📱</div>
+                <h3 class="font-bold text-xl text-white mb-2">Telefono</h3>
+                <p class="text-sm text-slate-400 leading-relaxed">
+                    +39 06 1234 5678<br>
+                    <span class="text-xs text-slate-500">Lun - Ven, 09:00 - 18:00</span>
+                </p>
+            </div>
+
+        </div>
+
+    </main>
+
+    
+    <script src="/static/js/navbar.js" defer></script>
+
+</body>
+
+</html>

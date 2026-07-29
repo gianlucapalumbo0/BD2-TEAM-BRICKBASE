@@ -54,9 +54,25 @@ func main() {
 		})
 	})
 
-	router.GET("/parts", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "part.html", gin.H{
-			"title": "Catalogo Pz LEGO",
+	router.GET("/contacts", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "contact.html", gin.H{
+			"title": "Contatti",
+		})
+	})
+
+	router.GET("/set-detail", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "set_detail.html", nil)
+	})
+
+	router.GET("/login", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "login.html", gin.H{
+			"title": "Login - BrickBase",
+		})
+	})
+
+	router.GET("/register", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "register.html", gin.H{
+			"title": "Registrazione - BrickBase",
 		})
 	})
 

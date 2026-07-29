@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/gianlucapalumbo0/BD2-TEAM-BRICKBASE/Server/BrickBaseServer/database"
@@ -16,39 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
-
-// restituisce tutte le parti presenti nel database
-func GetParts(client *mongo.Client) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		ctx, cancel := context.WithTimeout(c, 100*time.Second)
-		defer cancel()
-
-		page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-		limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
-		skip := (page - 1) * limit
-
-		var partCollection *mongo.Collection = database.OpenCollection("parts", client)
-		var parts []models.Part
-
-		findOptions := options.Find().SetLimit(int64(limit)).SetSkip(int64(skip))
-
-		cursor, err := partCollection.Find(ctx, bson.M{}, findOptions)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch parts."})
-			return
-		}
-		defer cursor.Close(ctx)
-
-		if err = cursor.All(ctx, &parts); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode parts."})
-			return
-		}
-
-		c.JSON(http.StatusOK, parts)
-	}
-}
 
 // Struttura temporanea per leggere la risposta di Rebrickable
 type RebrickablePartResponse struct {
