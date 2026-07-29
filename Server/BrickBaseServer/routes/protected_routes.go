@@ -14,8 +14,9 @@ func SetupProtectedRoutes(router *gin.Engine, client *mongo.Client) {
 		apiProtected.POST("/addset", controller.AddSet(client))
 		apiProtected.PUT("/set/:set_num", controller.UpdateSet(client))
 		apiProtected.DELETE("/set/:set_num", controller.DeleteSet(client))
-		apiProtected.PATCH("/sets/:set_num/review", controller.AddUserReview(client))
+		apiProtected.POST("/sets/:set_num/review", controller.AddUserReview(client))
 		apiProtected.POST("/sync-part-images", controller.SyncPartImages(client))
+		apiProtected.GET("/users/me/reviews", controller.GetUserReviewedSets(client))
 	}
 
 }
