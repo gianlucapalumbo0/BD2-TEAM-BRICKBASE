@@ -266,9 +266,10 @@ func AddUserReview(client *mongo.Client) gin.HandlerFunc {
 		}
 
 		var resp struct {
-			UserID string  `json:"user_id"`
-			Review string  `json:"review"`
-			Rating float64 `json:"rating"`
+			UserID       string  `json:"user_id"`
+			Review       string  `json:"review"`
+			Rating       float64 `json:"rating"`
+			ReviewRating float64 `json:"review_rating"`
 		}
 
 		if err := c.ShouldBindJSON(&req); err != nil {
@@ -307,6 +308,7 @@ func AddUserReview(client *mongo.Client) gin.HandlerFunc {
 			{Key: "set_num", Value: setId},
 		}
 
+		// CORREZIONE 1: Rimosso "ReviewRating: average" da qui (average non esiste ancora)
 		update := bson.M{
 			"$push": bson.M{
 				"user_reviews": models.UserReview{
@@ -346,6 +348,7 @@ func AddUserReview(client *mongo.Client) gin.HandlerFunc {
 			total += review.Rating
 		}
 
+		// Qui viene calcolata la media
 		average := total / float64(len(set.UserReviews))
 
 		_, err = setCollection.UpdateOne(
@@ -365,9 +368,11 @@ func AddUserReview(client *mongo.Client) gin.HandlerFunc {
 			return
 		}
 
+		// CORREZIONE 2: Assegnazione della media calcolata al JSON di risposta
 		resp.UserID = userId
 		resp.Review = req.Review
 		resp.Rating = rating
+		resp.ReviewRating = average
 
 		c.JSON(http.StatusOK, resp)
 	}
@@ -415,8 +420,10 @@ func GetReviewRating(review string, client *mongo.Client, c *gin.Context) (float
 		return 0, errors.New("invalid rating returned by Gemini")
 	}
 
-	if rating < 1 || rating > 5 {
-		return 0, errors.New("rating must be between 1 and 5")
+	if rating < 1 {
+		rating = 1
+	} else if rating > 5 {
+		rating = 5
 	}
 
 	return rating, nil
@@ -546,5 +553,51 @@ func GetSetInventoryDetailed(client *mongo.Client) gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, results)
+	}
+}
+
+// GetUserReviewedSets restituisce un array di set_num che l'utente loggato ha già recensito
+func GetUserReviewedSets(client *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Recuperiamo l'ID dell'utente dal token/contesto
+		userId, err := utils.GetUserIdFromContext(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Utente non autorizzato"})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(c, 100*time.Second)
+		defer cancel()
+
+		setCollection := database.OpenCollection("sets", client)
+
+		// Filtriamo i set in cui l'array user_reviews contiene un oggetto col nostro user_id
+		filter := bson.M{"user_reviews.user_id": userId}
+
+		// Proiezione: ci interessa SOLO il set_num (per risparmiare banda)
+		findOptions := options.Find().SetProjection(bson.M{"set_num": 1, "_id": 0})
+
+		cursor, err := setCollection.Find(ctx, filter, findOptions)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Errore nel recupero delle recensioni"})
+			return
+		}
+		defer cursor.Close(ctx)
+
+		var results []bson.M
+		if err = cursor.All(ctx, &results); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Errore decodifica risultati"})
+			return
+		}
+
+		// Estraiamo solo le stringhe set_num
+		reviewedSetNums := make([]string, 0)
+		for _, res := range results {
+			if setNum, ok := res["set_num"].(string); ok {
+				reviewedSetNums = append(reviewedSetNums, setNum)
+			}
+		}
+
+		c.JSON(http.StatusOK, reviewedSetNums)
 	}
 }

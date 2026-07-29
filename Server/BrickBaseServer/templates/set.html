@@ -10,12 +10,12 @@
 
 <body class="bg-slate-950 text-slate-200 min-h-screen">
 
-    
+
     {{ template "navbar" . }}
 
     <main class="container mx-auto py-12 px-6">
         <h1 class="text-4xl font-bold text-white mb-8">Tutti i nostri Set</h1>
-    
+
         <!-- Griglia responsiva per i set -->
         <div id="all-sets-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             <!-- Qui JavaScript inietterà le card -->
@@ -23,9 +23,37 @@
         </div>
     </main>
 
+    <!-- Finestra Modale per la Recensione (Forzata a invisibile all'avvio) -->
+    <div id="review-modal" style="display: none;"
+        class="fixed inset-0 bg-black/80 flex-col items-center justify-center z-50 px-4">
+        <div
+            class="bg-slate-900 p-6 rounded-2xl border border-slate-700 w-full max-w-lg relative shadow-xl shadow-slate-950/50">
+            <!-- Pulsante di chiusura -->
+            <button onclick="closeReviewModal()"
+                class="absolute top-4 right-4 text-slate-400 hover:text-red-500 text-2xl transition-colors">&times;</button>
+
+            <h2 class="text-2xl font-bold text-white mb-2">Aggiungi Recensione</h2>
+            <p id="modal-set-name" class="text-amber-500 text-sm mb-4 font-semibold"></p>
+
+            <!-- Campo nascosto per salvare il numero del set -->
+            <input type="hidden" id="review-set-num">
+
+            <textarea id="review-text" rows="5"
+                class="w-full bg-slate-800 text-slate-200 p-3 rounded-xl border border-slate-600 focus:border-amber-500 outline-none mb-2 resize-none"
+                placeholder="Scrivi qui la tua recensione per questo set..."></textarea>
+
+            <!-- Messaggi di errore o successo -->
+            <p id="review-message" class="text-sm font-semibold mb-4 hidden"></p>
+
+            <button id="submit-review-btn" onclick="submitReview()"
+                class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                Invia Recensione
+            </button>
+        </div>
+    </div>
+
     <script src="/static/js/set.js" defer></script>
     <script src="/static/js/navbar.js" defer></script>
-    
 
 </body>
 
