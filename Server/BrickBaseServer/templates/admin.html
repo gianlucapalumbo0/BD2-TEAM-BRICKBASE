@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Set Admin | BrickBase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-950 text-slate-200 min-h-screen">
+
+    <!-- Includiamo la navbar -->
+    {{ template "navbar" . }}
+
+    <main class="container mx-auto py-12 px-6 max-w-5xl">
+        <div class="flex items-center justify-between mb-8">
+            <h1 class="text-4xl font-bold text-amber-500">Pannello di Amministrazione Set</h1>
+        </div>
+
+        <!-- Menu a Schede (Tabs) per Inserisci, Modifica, Cancella -->
+        <div class="flex space-x-4 mb-8 border-b border-slate-800 pb-2 overflow-x-auto">
+            <button onclick="showAdminTab('create', this)"
+                class="tab-btn px-5 py-2.5 font-bold text-amber-500 border-b-2 border-amber-500 whitespace-nowrap transition-all">
+                ➕ Inserisci Set
+            </button>
+            <button onclick="showAdminTab('update', this)"
+                class="tab-btn px-5 py-2.5 font-bold text-slate-400 hover:text-white whitespace-nowrap transition-all">
+                ✏️ Modifica Set
+            </button>
+            <button onclick="showAdminTab('delete', this)"
+                class="tab-btn px-5 py-2.5 font-bold text-slate-400 hover:text-white whitespace-nowrap transition-all">
+                🗑️ Cancella Set
+            </button>
+        </div>
+
+        <!-- ================= 1. SEZIONE INSERISCI SET (Set Builder) ================= -->
+        <div id="section-create" class="admin-section block">
+            <h2 class="text-2xl font-bold text-white mb-6">Costruttore di un Nuovo Set LEGO</h2>
+
+            <form id="form-add-set" onsubmit="submitAddSet(event)" class="space-y-6">
+                <!-- Dati Generali del Set -->
+                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Campo SetNum -->
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1">Codice Set (SetNum)</label>
+                        <input type="text" id="set-num" placeholder="Es. 10258-1" required
+                            onblur="checkFieldAvailability('set_num', 'set-num', 'set-num-feedback')"
+                            class="w-full bg-slate-800 text-slate-200 p-3 rounded-xl border border-slate-600 outline-none focus:border-amber-500 transition-all">
+                        <p id="set-num-feedback" class="text-xs mt-1.5 hidden"></p>
+                    </div>
+
+                    <!-- Campo Nome Set -->
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1">Nome Set</label>
+                        <input type="text" id="set-name" placeholder="Es. London Bus" required
+                            onblur="checkFieldAvailability('name', 'set-name', 'set-name-feedback')"
+                            class="w-full bg-slate-800 text-slate-200 p-3 rounded-xl border border-slate-600 outline-none focus:border-amber-500">
+                        <p id="set-name-feedback" class="text-xs mt-1.5 hidden"></p>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1">Anno di Uscita</label>
+                        <input type="number" id="set-year" placeholder="Es. 2017" required min="1932" max="2026"
+                            onblur="checkYearRange(this)"
+                            class="w-full bg-slate-800 text-slate-200 p-3 rounded-xl border border-slate-600 outline-none focus:border-amber-500">
+                        <p id="set-year-feedback" class="text-xs mt-1.5 hidden"></p>
+                    </div>
+                    <div class="relative">
+                        <label class="block text-sm text-slate-400 mb-1">Tema LEGO</label>
+                        <!-- Input di ricerca visivo -->
+                        <input type="text" id="set-theme-search" placeholder="Cerca tema (es. Star Wars)..."
+                            autocomplete="off"
+                            class="w-full bg-slate-800 text-slate-200 p-3 rounded-xl border border-slate-600 outline-none focus:border-amber-500 transition-all">
+
+                        <!-- Campo nascosto che conterrà il theme_id numerico effettivo per il form -->
+                        <input type="hidden" id="set-theme-id" required>
+
+                        <!-- Dropdown dei suggerimenti in tempo reale -->
+                        <div id="theme-suggestions"
+                            class="absolute z-50 left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl hidden max-h-48 overflow-y-auto">
+                        </div>
+
+                        <p id="theme-feedback" class="text-xs mt-1.5 hidden"></p>
+                    </div>
+                </div>
+
+                <!-- Sezione Parti del Set (Inventory) -->
+                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+                    <h3 class="text-xl font-bold text-white mb-4">Inventario dei Pezzi</h3>
+
+                    <!-- Griglia a 12 colonne per allineare perfettamente tutto su un'unica riga pulita -->
+                    <div
+                        class="grid grid-cols-1 md:grid-cols-12 gap-3 mb-4 items-end bg-slate-950 p-4 rounded-xl border border-slate-800">
+
+                        <!-- Cerca Pezzo (4 colonne) -->
+                        <div class="relative md:col-span-4">
+                            <label class="block text-xs text-slate-400 mb-1">Cerca Pezzo</label>
+                            <input type="text" id="input-part-search" placeholder="Cerca pezzo per nome o codice..."
+                                autocomplete="off"
+                                class="w-full bg-slate-800 text-slate-200 p-2.5 rounded-lg border border-slate-600 text-sm outline-none focus:border-amber-500 transition-all">
+
+                            <input type="hidden" id="input-part-num">
+
+                            <div id="part-suggestions"
+                                class="absolute z-50 left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl hidden max-h-48 overflow-y-auto">
+                            </div>
+                        </div>
+
+                        <!-- Color ID (2 colonne) -->
+                        <div class="relative md:col-span-2">
+                            <label class="block text-xs text-slate-400 mb-1">Colore</label>
+                            <!-- Barra di ricerca visiva per il nome del colore -->
+                            <input type="text" id="input-color-search" placeholder="Cerca colore..." autocomplete="off"
+                                class="w-full bg-slate-800 text-slate-200 p-2.5 rounded-lg border border-slate-600 text-sm outline-none focus:border-amber-500 transition-all">
+                        
+                            <!-- Campo nascosto che conterrà il color_id effettivo -->
+                            <input type="hidden" id="input-color-id">
+                        
+                            <!-- Dropdown dei suggerimenti per i colori -->
+                            <div id="color-suggestions"
+                                class="absolute z-50 left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl hidden max-h-48 overflow-y-auto">
+                            </div>
+                        </div>
+
+                        <!-- Quantità (2 colonne) -->
+                        <div class="md:col-span-2">
+                            <label class="block text-xs text-slate-400 mb-1">Quantità</label>
+                            <input type="number" id="input-quantity" placeholder="Es. 4" min="1" value="1"
+                                class="w-full bg-slate-800 text-slate-200 p-2.5 rounded-lg border border-slate-600 text-sm outline-none focus:border-amber-500">
+                        </div>
+
+                        <!-- È un ricambio? (2 colonne) -->
+                        <div class="md:col-span-2 flex items-center h-10 gap-2">
+                            <input type="checkbox" id="input-is-spare" class="w-4 h-4 accent-amber-500">
+                            <label for="input-is-spare" class="text-xs text-slate-400">È un ricambio?</label>
+                        </div>
+
+                        <!-- Pulsante Aggiungi (2 colonne) -->
+                        <div class="md:col-span-2">
+                            <button type="button" onclick="addPartToInventory()"
+                                class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg text-sm font-bold transition-all shadow">
+                                + Aggiungi
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Box di anteprima del pezzo selezionato -->
+                    <div id="part-feedback" class="mb-4 hidden"></div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-slate-400 text-xs">
+                                    <th class="py-2 px-3">Pezzo</th>
+                                    <th class="py-2 px-3">Color ID</th>
+                                    <th class="py-2 px-3">Quantità</th>
+                                    <th class="py-2 px-3">Ricambio</th>
+                                    <th class="py-2 px-3 text-right">Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventory-table-body" class="text-sm divide-y divide-slate-800"></tbody>
+                        </table>
+                        <p id="empty-inventory-msg" class="text-slate-500 text-sm py-4 text-center">Nessun pezzo
+                            aggiunto finora.</p>
+                    </div>
+                </div>
+
+                <p id="msg-set" class="text-sm font-semibold hidden"></p>
+
+                <button type="submit"
+                    class="w-full py-4 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl font-bold text-lg transition-all shadow-lg shadow-amber-500/10">
+                    Crea e Salva Nuovo Set nel Database
+                </button>
+            </form>
+        </div>
+
+        <!-- ================= 2. SEZIONE MODIFICA SET ================= -->
+        <div id="section-update" class="admin-section hidden">
+            <h2 class="text-2xl font-bold text-white mb-6">Modifica un Set Esistente</h2>
+        
+            <!-- Step 1: Cerca e Carica il Set -->
+            <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 mb-6">
+                <label class="block text-sm text-amber-400 mb-2 font-bold">Inserisci Codice Set da Modificare (SetNum)</label>
+                <div class="flex gap-3">
+                    <input type="text" id="update-set-num" placeholder="Es. 10258-1" required
+                        class="flex-1 bg-slate-800 text-slate-200 p-3 rounded-xl border border-slate-600 outline-none focus:border-amber-500">
+                    <button type="button" onclick="fetchSetDetailsForUpdate()"
+                        class="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl transition-all shadow">
+                        🔍 Carica Set
+                    </button>
+                </div>
+                <p id="msg-load-set" class="text-xs mt-2 hidden"></p>
+            </div>
+        
+            <!-- Form di Modifica (nascosto finché non viene caricato un set) -->
+            <form id="form-update-set" onsubmit="submitUpdateSet(event)" class="space-y-6 hidden">
+                <!-- Dati Base (Nome e Anno) -->
+                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1">Nome Set</label>
+                        <input type="text" id="update-set-name" placeholder="Es. Nuovo Nome" required
+                            class="w-full bg-slate-800 text-slate-200 p-3 rounded-xl border border-slate-600 outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1">Anno di Uscita</label>
+                        <input type="number" id="update-set-year" placeholder="Es. 2020" min="1932" max="2026" required
+                            class="w-full bg-slate-800 text-slate-200 p-3 rounded-xl border border-slate-600 outline-none focus:border-amber-500">
+                    </div>
+                    <!-- Campo Nascosto Theme ID (mantiene quello esistente) -->
+                    <input type="hidden" id="update-set-theme-id">
+                </div>
+        
+                <!-- Modifica Inventario Pezzi del Set -->
+                <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800">
+                    <h3 class="text-xl font-bold text-white mb-4">Gestione Pezzi del Set</h3>
+        
+                    <!-- Form Aggiunta Pezzo -->
+                    <div
+                        class="grid grid-cols-1 md:grid-cols-12 gap-3 mb-4 items-end bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <!-- Cerca Pezzo (4 col) -->
+                        <div class="relative md:col-span-4">
+                            <label class="block text-xs text-slate-400 mb-1">Cerca Pezzo</label>
+                            <input type="text" id="update-part-search" placeholder="Cerca pezzo..." autocomplete="off"
+                                class="w-full bg-slate-800 text-slate-200 p-2.5 rounded-lg border border-slate-600 text-sm outline-none focus:border-amber-500">
+                            <input type="hidden" id="update-part-num">
+                            <div id="update-part-suggestions"
+                                class="absolute z-50 left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl hidden max-h-48 overflow-y-auto">
+                            </div>
+                        </div>
+        
+                        <!-- Cerca Colore (2 col) -->
+                        <div class="relative md:col-span-2">
+                            <label class="block text-xs text-slate-400 mb-1">Colore</label>
+                            <input type="text" id="update-color-search" placeholder="Cerca colore..." autocomplete="off"
+                                class="w-full bg-slate-800 text-slate-200 p-2.5 rounded-lg border border-slate-600 text-sm outline-none focus:border-amber-500">
+                            <input type="hidden" id="update-color-id">
+                            <div id="update-color-suggestions"
+                                class="absolute z-50 left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl hidden max-h-48 overflow-y-auto">
+                            </div>
+                        </div>
+        
+                        <!-- Quantità (2 col) -->
+                        <div class="md:col-span-2">
+                            <label class="block text-xs text-slate-400 mb-1">Quantità</label>
+                            <input type="number" id="update-quantity" min="1" value="1"
+                                class="w-full bg-slate-800 text-slate-200 p-2.5 rounded-lg border border-slate-600 text-sm outline-none focus:border-amber-500">
+                        </div>
+        
+                        <!-- Ricambio (2 col) -->
+                        <div class="md:col-span-2 flex items-center h-10 gap-2">
+                            <input type="checkbox" id="update-is-spare" class="w-4 h-4 accent-amber-500">
+                            <label for="update-is-spare" class="text-xs text-slate-400">Ricambio?</label>
+                        </div>
+        
+                        <!-- Bottone Aggiungi Pezzo (2 col) -->
+                        <div class="md:col-span-2">
+                            <button type="button" onclick="addPartToUpdateInventory()"
+                                class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg text-sm font-bold transition-all shadow">
+                                + Aggiungi
+                            </button>
+                        </div>
+                    </div>
+        
+                    <!-- Tabella Pezzi Attuali -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-slate-400 text-xs">
+                                    <th class="py-2 px-3">Pezzo</th>
+                                    <th class="py-2 px-3">Color ID</th>
+                                    <th class="py-2 px-3">Quantità</th>
+                                    <th class="py-2 px-3">Ricambio</th>
+                                    <th class="py-2 px-3 text-right">Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody id="update-inventory-table-body" class="text-sm divide-y divide-slate-800"></tbody>
+                        </table>
+                        <p id="update-empty-inventory-msg" class="text-slate-500 text-sm py-4 text-center hidden">Nessun pezzo
+                            presente in questo set.</p>
+                    </div>
+                </div>
+        
+                <p id="msg-update-set" class="text-sm font-semibold hidden"></p>
+        
+                <button type="submit"
+                    class="w-full py-4 bg-sky-600 hover:bg-sky-500 text-white rounded-xl font-bold text-lg transition-all shadow-lg">
+                    Salva Modifiche al Set
+                </button>
+            </form>
+        </div>
+
+        <!-- ================= 3. SEZIONE CANCELLA SET ================= -->
+        <div id="section-delete" class="admin-section hidden">
+            <h2 class="text-2xl font-bold text-white mb-6">Elimina un Set</h2>
+
+            <form id="form-delete-set" onsubmit="submitDeleteSet(event)" class="space-y-6">
+                <div class="bg-slate-900 p-6 rounded-2xl border border-red-900/40 space-y-4">
+                    <div>
+                        <label class="block text-sm text-red-400 mb-1 font-bold">Codice Set da Eliminare
+                            (SetNum)</label>
+                        <input type="text" id="delete-set-num" placeholder="Es. 10258-1" required
+                            class="w-full bg-slate-800 text-slate-200 p-3 rounded-xl border border-slate-600 outline-none focus:border-red-500">
+                        <p class="text-xs text-slate-500 mt-2">⚠️ Attenzione: questa operazione rimuoverà
+                            permanentemente il set dal database.</p>
+                    </div>
+                </div>
+
+                <p id="msg-delete-set" class="text-sm font-semibold hidden"></p>
+
+                <button type="submit"
+                    class="w-full py-4 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold text-lg transition-all shadow-lg">
+                    Elimina Definitivamente il Set
+                </button>
+            </form>
+        </div>
+
+    </main>
+
+    <!-- Script JavaScript -->
+    <script>
+        // Funzione per gestire il cambio tra le sezioni Inserisci, Modifica e Cancella
+        function showAdminTab(sectionName, clickedBtn) {
+            document.querySelectorAll('.admin-section').forEach(sec => {
+                sec.classList.add('hidden');
+                sec.classList.remove('block');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('text-amber-500', 'border-b-2', 'border-amber-500');
+                btn.classList.add('text-slate-400');
+            });
+
+            const target = document.getElementById(`section-${sectionName}`);
+            if (target) {
+                target.classList.remove('hidden');
+                target.classList.add('block');
+            }
+            if (clickedBtn) {
+                clickedBtn.classList.remove('text-slate-400');
+                clickedBtn.classList.add('text-amber-500', 'border-b-2', 'border-amber-500');
+            }
+        }
+    </script>
+    <script src="/static/js/admin.js" defer></script>
+    <script src="/static/js/navbar.js" defer></script>
+</body>
+
+</html>

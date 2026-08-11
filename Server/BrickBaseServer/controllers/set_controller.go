@@ -601,3 +601,36 @@ func GetUserReviewedSets(client *mongo.Client) gin.HandlerFunc {
 		c.JSON(http.StatusOK, reviewedSetNums)
 	}
 }
+
+// CheckSetExists verifica se un set esiste già nel database dato il suo set_num
+// CheckSetFieldExists verifica l'esistenza di un campo specifico (es. set_num o name)
+func CheckSetFieldExists(client *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		field := c.Query("field") // es. "set_num" oppure "name"
+		value := c.Query("value") // il valore inserito dall'utente
+
+		if field == "" || value == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Field and value are required"})
+			return
+		}
+
+		// Whitelist dei campi consentiti per motivi di sicurezza
+		if field != "set_num" && field != "name" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid field"})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(c, 100*time.Second)
+		defer cancel()
+
+		var setCollection *mongo.Collection = database.OpenCollection("sets", client)
+
+		count, err := setCollection.CountDocuments(ctx, bson.M{field: value})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"exists": count > 0})
+	}
+}

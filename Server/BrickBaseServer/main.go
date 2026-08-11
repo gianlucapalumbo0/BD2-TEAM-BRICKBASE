@@ -76,6 +76,12 @@ func main() {
 		})
 	})
 
+	router.GET("/admin", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "admin.html", gin.H{
+			"title": "Dashboard Admin - BrickBase",
+		})
+	})
+
 	routes.SetupUnProtectedRoutes(router, client)
 	routes.SetupProtectedRoutes(router, client)
 
