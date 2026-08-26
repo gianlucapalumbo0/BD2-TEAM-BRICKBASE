@@ -67,6 +67,10 @@ function renderNavbarAuthState(user) {
     const mobileUserName = document.getElementById('mobile-user-name');
     const mobileUserRole = document.getElementById('mobile-user-role');
 
+    // --- GESTIONE DINAMICA PULSANTE "INSERISCI" (ADMIN) ---
+    // Rimuoviamo eventuali link admin esistenti per evitare duplicati
+    document.querySelectorAll('.dynamic-admin-link').forEach(el => el.remove());
+
     if (user) {
         const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim();
         const roleLabel = formatRole(user.role);
@@ -83,6 +87,29 @@ function renderNavbarAuthState(user) {
         mobileUser?.classList.remove('hidden');
         if (mobileUserName) mobileUserName.textContent = fullName;
         if (mobileUserRole) mobileUserRole.textContent = roleLabel;
+
+        // Se l'utente è un ADMIN, iniettiamo il link "Inserisci"
+        if (user.role && user.role.toUpperCase() === 'ADMIN') {
+            // 1. Inserimento per Desktop (cerchiamo il blocco info utente o i pulsanti di navigazione)
+            if (userInfo && userInfo.parentNode) {
+                const adminDesktopLink = document.createElement('a');
+                adminDesktopLink.href = '/admin';
+                adminDesktopLink.className = 'dynamic-admin-link text-amber-400 hover:text-amber-300 font-bold transition-colors text-sm px-2 py-1';
+                adminDesktopLink.innerHTML = '⚙️ Inserisci';
+                // Lo inseriamo subito prima delle info utente o del logout
+                userInfo.parentNode.insertBefore(adminDesktopLink, userInfo);
+            }
+
+            // 2. Inserimento per Mobile (dentro il blocco mobile-auth-user se presente)
+            if (mobileUser && mobileUser.parentNode) {
+                const adminMobileLink = document.createElement('a');
+                adminMobileLink.href = '/admin';
+                adminMobileLink.className = 'dynamic-admin-link block text-amber-400 hover:text-amber-300 font-bold py-2';
+                adminMobileLink.innerHTML = '⚙️ Inserisci';
+                mobileUser.appendChild(adminMobileLink);
+            }
+        }
+
     } else {
         loginBtn?.classList.remove('hidden');
         registerBtn?.classList.remove('hidden');

@@ -15,6 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 // Struttura temporanea per leggere la risposta di Rebrickable
@@ -129,5 +130,45 @@ func SyncPartImages(client *mongo.Client) gin.HandlerFunc {
 
 			log.Println("Sincronizzazione immagini completata!")
 		}()
+	}
+}
+
+// SearchParts cerca i pezzi per nome o part_num nel database
+func SearchParts(client *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		query := c.Query("q")
+		if query == "" {
+			c.JSON(http.StatusOK, []models.Part{})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(c, 100*time.Second)
+		defer cancel()
+
+		partCollection := database.OpenCollection("parts", client)
+
+		// Filtro per ricerca parziale (case-insensitive) su nome o part_num
+		filter := bson.M{
+			"$or": []bson.M{
+				{"name": bson.M{"$regex": query, "$options": "i"}},
+				{"part_num": bson.M{"$regex": query, "$options": "i"}},
+			},
+		}
+
+		findOptions := options.Find().SetLimit(15)
+		cursor, err := partCollection.Find(ctx, filter, findOptions)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Errore durante la ricerca dei pezzi"})
+			return
+		}
+		defer cursor.Close(ctx)
+
+		var parts []models.Part
+		if err = cursor.All(ctx, &parts); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Errore decodifica pezzi"})
+			return
+		}
+
+		c.JSON(http.StatusOK, parts)
 	}
 }

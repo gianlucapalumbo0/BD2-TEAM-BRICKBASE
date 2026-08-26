@@ -11,12 +11,24 @@ func SetupProtectedRoutes(router *gin.Engine, client *mongo.Client) {
 	apiProtected := router.Group("/api")
 	apiProtected.Use(middleware.AuthMiddleWare())
 	{
+		// --- ROTTE SET ---
 		apiProtected.POST("/addset", controller.AddSet(client))
 		apiProtected.PUT("/set/:set_num", controller.UpdateSet(client))
 		apiProtected.DELETE("/set/:set_num", controller.DeleteSet(client))
-		apiProtected.POST("/sets/:set_num/review", controller.AddUserReview(client))
-		apiProtected.POST("/sync-part-images", controller.SyncPartImages(client))
-		apiProtected.GET("/users/me/reviews", controller.GetUserReviewedSets(client))
-	}
+		apiProtected.GET("/set/check", controller.CheckSetFieldExists(client))
 
+		// --- ROTTE RECENSIONI ---
+		apiProtected.POST("/sets/:set_num/review", controller.AddUserReview(client))
+		apiProtected.GET("/users/me/reviews", controller.GetUserReviewedSets(client))
+
+		// --- ROTTE PARTI ---
+		apiProtected.POST("/sync-part-images", controller.SyncPartImages(client))
+		apiProtected.GET("/parts/search", controller.SearchParts(client))
+
+		// --- ROTTE TEMI ---
+		apiProtected.GET("/themes/search", controller.SearchThemes(client))
+
+		// --- ROTTE COLORI ---
+		apiProtected.GET("/colors/search", controller.SearchColors(client))
+	}
 }
