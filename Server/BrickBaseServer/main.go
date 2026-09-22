@@ -11,7 +11,6 @@ import (
 	"github.com/gianlucapalumbo0/BD2-TEAM-BRICKBASE/Server/BrickBaseServer/database"
 	"github.com/gianlucapalumbo0/BD2-TEAM-BRICKBASE/Server/BrickBaseServer/routes"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
@@ -25,16 +24,14 @@ func main() {
 	router.SetHTMLTemplate(templ)
 	router.Static("/static", "./static")
 
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Println("Warning: unable to find .env file")
-	}
-
 	var client *mongo.Client = database.Connect()
 
 	if err := client.Ping(context.Background(), nil); err != nil {
 		log.Fatalf("Failed to reach server: %v", err)
 	}
+
+	database.CreateIndexes(client)
+
 	defer func() {
 		err := client.Disconnect(context.Background())
 		if err != nil {

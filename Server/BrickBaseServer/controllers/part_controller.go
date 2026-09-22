@@ -23,17 +23,18 @@ type RebrickablePartResponse struct {
 	PartImgUrl string `json:"part_img_url"`
 }
 
-// SyncPartImages sincronizza le immagini mancanti da Rebrickable
+// La funzione SyncPartImages sincronizza le immagini mancanti da Rebrickable
 func SyncPartImages(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Protezione: Solo admin dovrebbero poter lanciare questo script
+		// controlla che l'utente che ha fatto la richiesta sia un amministratore
 		role, err := utils.GetRoleFromContext(c)
 		if err != nil || role != "ADMIN" {
 			c.JSON(http.StatusForbidden, gin.H{"error": "Solo gli admin possono avviare la sincronizzazione"})
 			return
 		}
 
-		apiKey := os.Getenv("REBRICKABLE_API_KEY") // Assicurati di averla nel .env
+		// verifica che la chiave API di Rebrickable sia presente nelle variabili d'ambiente
+		apiKey := os.Getenv("REBRICKABLE_API_KEY")
 		if apiKey == "" {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "API Key di Rebrickable mancante"})
 			return
@@ -41,14 +42,12 @@ func SyncPartImages(client *mongo.Client) gin.HandlerFunc {
 
 		c.JSON(http.StatusOK, gin.H{"message": "Sincronizzazione avviata in background. Ci vorrà del tempo!"})
 
-		// Usiamo una Goroutine (background) per non bloccare la risposta del server
-		// altrimenti la richiesta HTTP andrebbe in timeout dopo pochi secondi
+		// avvia una Goroutine (background) per non bloccare la risposta del server
 		go func() {
-			// Creiamo un nuovo context per la goroutine (senza timeout breve)
 			ctx := context.Background()
 			partCollection := database.OpenCollection("parts", client)
 
-			// Ottimizzazione: cerchiamo solo i pezzi che NON hanno ancora un'immagine
+			// cerchiamo solo i pezzi che NON hanno ancora un'immagine
 			filter := bson.M{
 				"$or": []bson.M{
 					{"part_img_url": bson.M{"$exists": false}},
@@ -69,19 +68,19 @@ func SyncPartImages(client *mongo.Client) gin.HandlerFunc {
 				return
 			}
 
-			totalParts := len(parts) // Salviamo il totale dei pezzi da elaborare
+			// salviamo il totale dei pezzi da elaborare
+			totalParts := len(parts)
 			log.Printf("Trovati %d pezzi da aggiornare. Inizio sincronizzazione...", totalParts)
 
-			// Modifica: Aggiunto 'i' per tenere traccia dell'indice corrente nel ciclo
 			for i, part := range parts {
 
-				// Calcoliamo i pezzi rimanenti
+				// calcoliamo i pezzi rimanenti
 				pezziRimanenti := totalParts - (i + 1)
 
-				// Stampiamo il progresso prima di chiamare l'API
+				// stampiamo il progresso prima di chiamare l'API
 				log.Printf("[Progresso: %d/%d] Mancano %d pezzi - Controllo: %s", i+1, totalParts, pezziRimanenti, part.PartNum)
 
-				// 1. Chiamiamo l'API
+				// chiamiamo l'API
 				url := fmt.Sprintf("https://rebrickable.com/api/v3/lego/parts/%s/?key=%s", part.PartNum, apiKey)
 				resp, err := http.Get(url)
 
@@ -91,7 +90,7 @@ func SyncPartImages(client *mongo.Client) gin.HandlerFunc {
 					continue
 				}
 
-				// GESTIONE 404: Se il pezzo non esiste su Rebrickable
+				// se il pezzo non esiste su Rebrickable
 				if resp.StatusCode == 404 {
 					log.Printf("Pezzo %s non trovato (404). Lo segno come NOT_FOUND.", part.PartNum)
 					update := bson.M{"$set": bson.M{"part_img_url": "NOT_FOUND"}}
@@ -101,7 +100,7 @@ func SyncPartImages(client *mongo.Client) gin.HandlerFunc {
 					continue
 				}
 
-				// Gestione altri errori (es. 429, 500)
+				// gestione altri errori (es. 429, 500)
 				if resp.StatusCode != 200 {
 					log.Printf("Errore API per il pezzo %s (Status: %d)", part.PartNum, resp.StatusCode)
 					resp.Body.Close()
@@ -109,11 +108,10 @@ func SyncPartImages(client *mongo.Client) gin.HandlerFunc {
 					continue
 				}
 
-				// 2. Decodifichiamo il JSON
 				var apiResult RebrickablePartResponse
 				if err := json.NewDecoder(resp.Body).Decode(&apiResult); err == nil && apiResult.PartImgUrl != "" {
 
-					// 3. Salviamo l'URL nel database
+					// salviamo l'URL nel database
 					update := bson.M{"$set": bson.M{"part_img_url": apiResult.PartImgUrl}}
 					_, err := partCollection.UpdateOne(ctx, bson.M{"_id": part.ID}, update)
 					if err != nil {
@@ -124,7 +122,6 @@ func SyncPartImages(client *mongo.Client) gin.HandlerFunc {
 				}
 				resp.Body.Close()
 
-				// IL PASSAGGIO CHIAVE: Aspettiamo 1.2 secondi
 				time.Sleep(1200 * time.Millisecond)
 			}
 

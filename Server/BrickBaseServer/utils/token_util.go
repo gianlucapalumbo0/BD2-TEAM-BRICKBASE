@@ -13,6 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
+// SignedDetails rappresenta la struttura dei dati salvati dentro al token JWT
 type SignedDetails struct {
 	Email     string
 	FirstName string
@@ -22,7 +23,9 @@ type SignedDetails struct {
 	jwt.RegisteredClaims
 }
 
+// La funzione GenerateAllTokens crea e firma sia l'Access Token che il Refresh Token per un utente
 func GenerateAllTokens(email, firstName, lastName, role, userId string) (string, string, error) {
+	// recupera le chiavi segrete di firma dalle variabili d'ambiente
 	var SECRET_KEY string = os.Getenv("SECRET_KEY")
 	var SECRET_REFRESH_KEY string = os.Getenv("SECRET_REFRESH_KEY")
 
@@ -38,9 +41,10 @@ func GenerateAllTokens(email, firstName, lastName, role, userId string) (string,
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 		},
 	}
+
+	// crea e firma l'Access Token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	signedToken, err := token.SignedString([]byte(SECRET_KEY))
-
 	if err != nil {
 		return "", "", err
 	}
@@ -57,9 +61,10 @@ func GenerateAllTokens(email, firstName, lastName, role, userId string) (string,
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * 7 * time.Hour)),
 		},
 	}
+
+	// crea e firma il Refresh Token
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
 	signedRefreshToken, err := refreshToken.SignedString([]byte(SECRET_REFRESH_KEY))
-
 	if err != nil {
 		return "", "", err
 	}
@@ -68,6 +73,7 @@ func GenerateAllTokens(email, firstName, lastName, role, userId string) (string,
 
 }
 
+// La funzione UpdateAllTokens salva o aggiorna i token JWT dell'utente e la data di modifica su MongoDB
 func UpdateAllTokens(userId, token, refreshToken string, client *mongo.Client) (err error) {
 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
@@ -92,6 +98,7 @@ func UpdateAllTokens(userId, token, refreshToken string, client *mongo.Client) (
 	return nil
 }
 
+// La funzione GetAccessToken recupera il valore dell'Access Token dai cookie inviati dal client
 func GetAccessToken(c *gin.Context) (string, error) {
 
 	tokenString, err := c.Cookie("access_token")
@@ -104,11 +111,15 @@ func GetAccessToken(c *gin.Context) (string, error) {
 
 }
 
+// La funzione ValidateToken decodifica e verifica la validità di un Access Token
 func ValidateToken(tokenString string) (*SignedDetails, error) {
+
+	// recupera la chiave segreta dell'Access Token dalle variabili d'ambiente
 	secretKey := os.Getenv("SECRET_KEY")
 
 	claims := &SignedDetails{}
 
+	// verifica la firma del token usando la chiave segreta
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(secretKey), nil
 	})
@@ -127,6 +138,7 @@ func ValidateToken(tokenString string) (*SignedDetails, error) {
 	return claims, nil
 }
 
+// La funzione GetUserIdFromContext estrae e valida l'ID utente dal contesto della richiesta Gin
 func GetUserIdFromContext(c *gin.Context) (string, error) {
 	userId, exists := c.Get("userId")
 
@@ -141,9 +153,9 @@ func GetUserIdFromContext(c *gin.Context) (string, error) {
 	}
 
 	return id, nil
-
 }
 
+// La funzione GetRoleFromContext estrae e valida il ruolo dell'utente dal contesto della richiesta Gin
 func GetRoleFromContext(c *gin.Context) (string, error) {
 	role, exists := c.Get("role")
 
@@ -158,13 +170,16 @@ func GetRoleFromContext(c *gin.Context) (string, error) {
 	}
 
 	return memberRole, nil
-
 }
 
+// La funzione ValidateRefreshToken decodifica e verifica la validità di un Refresh Token
 func ValidateRefreshToken(tokenString string) (*SignedDetails, error) {
 	claims := &SignedDetails{}
+
+	// recupera la chiave segreta specifica per i Refresh Token dalle variabili d'ambiente
 	secretRefreshKey := os.Getenv("SECRET_REFRESH_KEY")
 
+	// verifica della firma usando la chiave segreta di refresh
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 
 		return []byte(secretRefreshKey), nil

@@ -863,6 +863,40 @@ if (inputColorSearch) {
     });
 }
 
+// 7. LOGICA AVVIO SYNC IMMAGINI PEZZI (POST /api/sync-images)
+async function triggerSyncPartImages() {
+    const msgEl = document.getElementById('msg-sync-images');
+    
+    if (!confirm("Sei sicuro di voler avviare la sincronizzazione delle immagini in background?")) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/sync-part-images', {
+            method: 'POST', // Modifica in 'GET' se nel router Go hai usato r.GET
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include' // Invia i cookie di sessione/autenticazione admin
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            msgEl.innerText = data.message || "✔️ Sincronizzazione avviata con successo in background!";
+            msgEl.className = "text-sm font-semibold mb-4 text-green-400 block";
+            msgEl.classList.remove('hidden');
+        } else {
+            msgEl.innerText = data.error || "Errore durante l'avvio della sincronizzazione.";
+            msgEl.className = "text-sm font-semibold mb-4 text-red-400 block";
+            msgEl.classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error("Errore:", error);
+        msgEl.innerText = "Errore di connessione col server.";
+        msgEl.className = "text-sm font-semibold mb-4 text-red-400 block";
+        msgEl.classList.remove('hidden');
+    }
+}
+
 // ESPORTAZIONE GLOBALE PER L'HTML
 window.showAdminTab = showAdminTab;
 window.addPartToInventory = addPartToInventory;
@@ -875,3 +909,4 @@ window.submitUpdateSet = submitUpdateSet;
 window.submitDeleteSet = submitDeleteSet;
 window.checkFieldAvailability = checkFieldAvailability;
 window.checkYearRange = checkYearRange;
+window.triggerSyncPartImages = triggerSyncPartImages;

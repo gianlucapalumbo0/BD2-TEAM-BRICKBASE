@@ -1,11 +1,13 @@
 package database
 
 import (
-	"fmt"
+	"context"
 	"log"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
@@ -24,8 +26,6 @@ func Connect() *mongo.Client {
 		log.Fatal("MONGODB_URI not set!")
 	}
 
-	fmt.Println("MongoDB URI: ", MongoDb)
-
 	clientOptions := options.Client().ApplyURI(MongoDb)
 
 	client, err := mongo.Connect(clientOptions)
@@ -39,14 +39,10 @@ func Connect() *mongo.Client {
 
 func OpenCollection(collectionName string, client *mongo.Client) *mongo.Collection {
 
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Println("Warning: unable to find .env file")
-	}
-
 	databaseName := os.Getenv("DATABASE_NAME")
-
-	fmt.Println("DATABASE_NAME: ", databaseName)
+	if databaseName == "" {
+		log.Fatal("DATABASE_NAME not set!")
+	}
 
 	collection := client.Database(databaseName).Collection(collectionName)
 
@@ -55,4 +51,27 @@ func OpenCollection(collectionName string, client *mongo.Client) *mongo.Collecti
 	}
 	return collection
 
+}
+
+// CreateIndexes viene chiamata una volta all'avvio per configurare gli indici
+func CreateIndexes(client *mongo.Client) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	setCollection := OpenCollection("sets", client)
+
+	// Definisce l'indice su review_rating in ordine decrescente (-1)
+	indexModel := mongo.IndexModel{
+		Keys: bson.D{
+			{Key: "review_rating", Value: -1},
+		},
+	}
+
+	// Crea l'indice su MongoDB
+	name, err := setCollection.Indexes().CreateOne(ctx, indexModel)
+	if err != nil {
+		log.Printf("Errore durante la creazione dell'indice su review_rating: %v\n", err)
+	} else {
+		log.Printf("Indice verificato/creato con successo: %s\n", name)
+	}
 }

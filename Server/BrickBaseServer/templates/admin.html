@@ -32,6 +32,11 @@
                 class="tab-btn px-5 py-2.5 font-bold text-slate-400 hover:text-white whitespace-nowrap transition-all">
                 🗑️ Cancella Set
             </button>
+            <!-- NUOVO TAB -->
+            <button onclick="showAdminTab('sync', this)"
+                class="tab-btn px-5 py-2.5 font-bold text-slate-400 hover:text-white whitespace-nowrap transition-all">
+                🔄 Sync Immagini
+            </button>
         </div>
 
         <!-- ================= 1. SEZIONE INSERISCI SET (Set Builder) ================= -->
@@ -313,6 +318,40 @@
                 </button>
             </form>
         </div>
+
+
+        <!-- ================= 4. SEZIONE SYNC IMMAGINI ================= -->
+        <div id="section-sync" class="admin-section hidden">
+            <h2 class="text-2xl font-bold text-white mb-6">Sincronizzazione Immagini Pezzi</h2>
+        
+            <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-200 mb-1">Aggiornamento Massivo da Rebrickable</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        Questo script eseguirà una scansione di tutti i pezzi nel database che non possiedono un'immagine
+                        (`part_img_url` vuoto o mancante) e ricaverà l'URL ufficiale tramite l'API di Rebrickable.
+                        L'operazione verrà eseguita in background sul server per evitare timeout.
+                    </p>
+                </div>
+        
+                <div class="p-4 bg-slate-950 border border-slate-800 rounded-xl">
+                    <p class="text-xs text-amber-400 font-medium">⚠️ Nota bene:</p>
+                    <p class="text-xs text-slate-400 mt-1">
+                        Il processo rispetta un intervallo di pausa (rate limiting) per ogni richiesta, quindi il completamento
+                        potrebbe richiedere diversi minuti in base al numero di pezzi mancanti.
+                    </p>
+                </div>
+        
+                <p id="msg-sync-images" class="text-sm font-semibold hidden"></p>
+        
+                <button type="button" onclick="triggerSyncPartImages()"
+                    class="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-lg transition-all shadow-lg">
+                    🚀 Avvia Sincronizzazione Immagini
+                </button>
+            </div>
+        </div>
+
+        
 
     </main>
 

@@ -25,7 +25,8 @@ import (
 
 var validate = validator.New()
 
-// restituisce tutti i set presenti nel database
+// La funzione GetSets permette di recuperare i set LEGO dal database MongoDB
+// Invece di caricare l'intero catalogo, ne carica 20 alla volta
 func GetSets(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c, 100*time.Second)
@@ -56,12 +57,13 @@ func GetSets(client *mongo.Client) gin.HandlerFunc {
 	}
 }
 
-// restituisce un set specifico dato il suo numero
+// La funzione GetSet restituisce un set specifico dato il suo numero
 func GetSet(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c, 100*time.Second)
 		defer cancel()
 
+		// estrae il parametro "set_num" dal percorso dell'URL
 		setID := c.Param("set_num")
 		fmt.Println("SET ID:", setID)
 
@@ -74,6 +76,7 @@ func GetSet(client *mongo.Client) gin.HandlerFunc {
 
 		var set models.Set
 
+		// cerca nel DB il documento avente "set_num" pari a setID e lo decodifica nella struct
 		err := setCollection.FindOne(ctx, bson.M{"set_num": setID}).Decode(&set)
 
 		if err != nil {
@@ -233,21 +236,25 @@ func DeleteSet(client *mongo.Client) gin.HandlerFunc {
 	}
 }
 
+// La funzione AddUserReview permette l'inserimento di una recensione da parte di un utente per un determinato set LEGO
 func AddUserReview(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
+		// si estrae l'ID dell'utente
 		userId, err := utils.GetUserIdFromContext(c)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "User Id not found in context"})
 			return
 		}
 
+		// si estrae il ruolo dell'utente
 		role, err := utils.GetRoleFromContext(c)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Role not found in context"})
 			return
 		}
 
+		// si verificano i permessi: solo gli utenti con ruolo "USER" possono lasciare recensioni
 		if role != "USER" {
 			c.JSON(http.StatusForbidden, gin.H{
 				"error": "Only users can add reviews",
@@ -255,6 +262,7 @@ func AddUserReview(client *mongo.Client) gin.HandlerFunc {
 			return
 		}
 
+		// si estrae l'identificativo del set
 		setId := c.Param("set_num")
 		if setId == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Set Id required"})
@@ -282,6 +290,7 @@ func AddUserReview(client *mongo.Client) gin.HandlerFunc {
 
 		setCollection := database.OpenCollection("sets", client)
 
+		// si controlla se il set è già stato recensito
 		checkFilter := bson.M{
 			"set_num":              setId,
 			"user_reviews.user_id": userId,
@@ -298,6 +307,7 @@ func AddUserReview(client *mongo.Client) gin.HandlerFunc {
 			return
 		}
 
+		// si ottiene la valutazione numerica (rating) analizzando il testo della recensione
 		rating, err := GetReviewRating(req.Review, client, c)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -308,7 +318,7 @@ func AddUserReview(client *mongo.Client) gin.HandlerFunc {
 			{Key: "set_num", Value: setId},
 		}
 
-		// CORREZIONE 1: Rimosso "ReviewRating: average" da qui (average non esiste ancora)
+		// si aggiunge la nuova recensione al set
 		update := bson.M{
 			"$push": bson.M{
 				"user_reviews": models.UserReview{
@@ -342,15 +352,15 @@ func AddUserReview(client *mongo.Client) gin.HandlerFunc {
 			return
 		}
 
+		// si calcola la nuova media delle valutazioni
 		var total float64
-
 		for _, review := range set.UserReviews {
 			total += review.Rating
 		}
 
-		// Qui viene calcolata la media
 		average := total / float64(len(set.UserReviews))
 
+		// si aggiorna il campo "review_rating" del set con il valore medio calcolato
 		_, err = setCollection.UpdateOne(
 			ctx,
 			filter,
@@ -368,7 +378,6 @@ func AddUserReview(client *mongo.Client) gin.HandlerFunc {
 			return
 		}
 
-		// CORREZIONE 2: Assegnazione della media calcolata al JSON di risposta
 		resp.UserID = userId
 		resp.Review = req.Review
 		resp.Rating = rating
@@ -378,8 +387,10 @@ func AddUserReview(client *mongo.Client) gin.HandlerFunc {
 	}
 }
 
+// La funzione GetReviewRating traduce il testo in un punteggio numerico da 1 a 5
 func GetReviewRating(review string, client *mongo.Client, c *gin.Context) (float64, error) {
 
+	// recupera la chiave API di Gemini dalle variabili di ambiente
 	geminiApiKey := os.Getenv("GEMINI_API_KEY")
 
 	if geminiApiKey == "" {
@@ -399,10 +410,13 @@ func GetReviewRating(review string, client *mongo.Client, c *gin.Context) (float
 
 	defer geminiClient.Close()
 
-	model := geminiClient.GenerativeModel("gemini-flash-latest")
+	// inizializza il modello generativo Gemini specificato
+	model := geminiClient.GenerativeModel("gemini-3.1-flash-lite")
 
+	// legge il prompt dalle variabili di ambiente
 	basePrompt := os.Getenv("BASE_PROMPT_TEMPLATE")
 
+	// invia la richiesta di generazione contenuto concatenando il prompt al testo della recensione
 	response, err := model.GenerateContent(
 		ctx,
 		genai.Text(basePrompt+review),
@@ -425,13 +439,17 @@ func GetReviewRating(review string, client *mongo.Client, c *gin.Context) (float
 	} else if rating > 5 {
 		rating = 5
 	}
-
+	// restituisce il rating numerico calcolato dall'IA
 	return rating, nil
 }
 
+// GetBestSets restituisce un handler Gin per il recupero dei set con le valutazioni migliori
+// Interroga la collezione "sets" applicando un ordinamento decrescente sul campo "review rating"
+// e limitando il risultato ai primi 4 elementi
 func GetBestSets(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
+		// caricamento variabili d'ambiente
 		err := godotenv.Load(".env")
 		if err != nil {
 			log.Println("Warning: .env file not found")
@@ -457,6 +475,7 @@ func GetBestSets(client *mongo.Client) gin.HandlerFunc {
 
 		setCollection := database.OpenCollection("sets", client)
 
+		// esecuzione della query di ricerca
 		cursor, err := setCollection.Find(
 			ctx,
 			bson.D{},
@@ -474,6 +493,7 @@ func GetBestSets(client *mongo.Client) gin.HandlerFunc {
 
 		var bestSets []models.Set
 
+		// decodifica di tutti i documenti trovati nello slice bestSets
 		if err := cursor.All(ctx, &bestSets); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
@@ -485,7 +505,7 @@ func GetBestSets(client *mongo.Client) gin.HandlerFunc {
 	}
 }
 
-// GetSetInventoryDetailed restituisce tutti i pezzi di un set completi di immagini e colori
+// GetSetInventoryDetailed restituisce tutti i pezzi di uno specifico set LEGO
 func GetSetInventoryDetailed(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c, 100*time.Second)
@@ -501,7 +521,7 @@ func GetSetInventoryDetailed(client *mongo.Client) gin.HandlerFunc {
 
 		// Pipeline di Aggregazione MongoDB
 		pipeline := mongo.Pipeline{
-			// 1. Trova il set specifico
+			// 1. Trova il set con quello specifico set_num
 			{{Key: "$match", Value: bson.M{"set_num": setID}}},
 
 			// 2. "Srotola" l'array dell'inventario in documenti separati
